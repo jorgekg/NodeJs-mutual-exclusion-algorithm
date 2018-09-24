@@ -4,11 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace exclusao_mutua_server.Model
+namespace Coordenador.Model
 {
     public class Request
     {
-        public int id { get; set; }
+        public int? id { get; set; }
         public DateTime? create_at { get; set; }
+        public int? status { get; set; }
     }
 }
