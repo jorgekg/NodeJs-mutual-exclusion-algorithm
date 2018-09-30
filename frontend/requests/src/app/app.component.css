@@ -1,0 +1,11 @@
+.status0, .status3 {
+  color: orange
+}
+
+.status1 {
+  color: green;
+}
+
+.status2 {
+  color: red
+}

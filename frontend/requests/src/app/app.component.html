@@ -1,13 +1,15 @@
-<h1>Requisições enviadas {{requestList.length}}</h1>
-<table border=1>
+<h1>Requisições enviadas {{requestList.length}} -- coordenador: {{coordenador}}</h1>
+<table class="table">
   <thead>
     <th>requsição</th>
     <th>status</th>
+    <th>Tempo de bloqueio</th>
   </thead>
   <tbody>
     <tr *ngFor="let request of requestList">
       <td>Requisição: {{request?.id}}</td>
-      <td>Status: {{getStatus(request?.status)}}</td>
+      <td><span class="status{{request?.status}}">Status: {{getStatus(request?.status)}}</span></td>
+      <td>{{request?.time}} segundos</td>
     </tr>
   </tbody>
 </table>
