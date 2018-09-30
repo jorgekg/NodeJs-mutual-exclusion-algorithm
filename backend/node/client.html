@@ -1,0 +1,52 @@
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script>
+const ws = new WebSocket('ws://localhost:4206');
+const requestList = [];
+$(document).ready(function() {
+  
+  create();
+  send();  
+  
+});
+
+ws.onopen = function () {
+  alert('conectado');
+  requestList.push({id: requestList.length, status: 0});
+  requestList.forEach((request) => {
+    ws.send(JSON.stringify(request));
+  });
+  
+}
+
+ws.onmessage = function(dt) {
+  const request = JSON.parse(dt.data);
+  requestList.forEach(rst => {
+    if (request.id == rst.id) {
+      rst.status = request.status;
+    }
+  });
+}
+
+ws.onclose = function () {
+  alert('close');
+}
+
+function create() {
+  setTimeout(function(){
+    requestList.push({id: requestList.length + 1});
+    create();
+  }, 40000);
+}
+
+function send() {
+  setTimeout(() => {
+      ws.send(JSON.stringify(requestList[getRndInteger(0, requestList.length)]));
+      send();
+  }, getRndInteger(10, 25) * 1000);
+}
+
+function getRndInteger(min, max) {
+    return Math.floor(Math.random() * (max - min) ) + min;
+}
+</script>

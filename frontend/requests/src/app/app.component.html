@@ -1,0 +1,13 @@
+<h1>Requisições enviadas {{requestList.length}}</h1>
+<table border=1>
+  <thead>
+    <th>requsição</th>
+    <th>status</th>
+  </thead>
+  <tbody>
+    <tr *ngFor="let request of requestList">
+      <td>Requisição: {{request?.id}}</td>
+      <td>Status: {{getStatus(request?.status)}}</td>
+    </tr>
+  </tbody>
+</table>
