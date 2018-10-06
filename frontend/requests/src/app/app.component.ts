@@ -9,66 +9,87 @@ export class AppComponent implements OnInit {
   title = 'requests';
 
   public requestList = [];
-  public coordenador = null;
-  private token = 1;
-  private ws = new WebSocket('ws://localhost:4206/teste');
+  public requests = [];
+  public coordinator = null;
+
+  private wssConnect = new WebSocket('ws://localhost:4206/teste');
+  private wssTransfer = new WebSocket('ws://localhost:4207/teste');
 
   ngOnInit() {
     const self = this;
-    this.ws.onopen = function () {
-      self.requestList.push({id: self.requestList.length, status: 0, token: self.token, time: 0});
-      self.requestList.forEach((request) => {
-        self.ws.send(JSON.stringify(request));
-      });
-    };
-    this.ws.onmessage = function(dt) {
-      if (dt.data === 'dead') {
-        self.requestList.forEach((req) => {
-          if (req.status !== 1) {
-            req.status = 2;
-          }
-        });
-        self.coordenador = 'Coordenador morreu';
-      } else if (dt.data.includes('coordenador')) {
-        self.coordenador = 'Requisição: ' + JSON.parse(dt.data).coordenador;
-      } else {
-        const request = JSON.parse(dt.data);
-        self.requestList.forEach((req) => {
-          if (req.token   === request.token && req.status !== 2) {
-            req.status = request.status;
-            req.time = request.time / 1000;
-          }
-        });
+    this.wssConnect.onmessage = (data: any) => {
+      if (data) {
+        const request = JSON.parse(data.data);
+        if (!request.coordenador) {
+          this.requestList.forEach(req => {
+            if (req.token === request.token) {
+              req.id = request.id;
+            }
+          });
+        }
+        if (this.requestList.length === 1) {
+          this.send();
+        }
       }
     };
-    this.ws.onclose = function () {
-      alert('close');
+    this.wssTransfer.onmessage = function(data: any) {
+      if (data) {
+        const request = JSON.parse(data.data);
+        if (!request.coordenador) {
+          self.requestList.forEach(req => {
+            if (req.id === request.data.id) {
+              req.status = request.data.status;
+            }
+          });
+        } else {
+          self.coordinator = request.coordinator;
+          self.blockRequest(request);
+        }
+      }
     };
-    this.send();
     this.create();
   }
 
-  private send() {
+  private blockRequest(request: any) {
+    const time = this.getRndInteger(5, 15) * 1000;
+    this.requests.push({id: request.data.data.id, time: time, status: 2});
     setTimeout(() => {
-      const request = this.requestList[this.getRndInteger(0, this.requestList.length)];
-      request.token = this.token;
-      this.token++;
-      request.status = 0;
-      request.time = 0;
-      this.ws.send(JSON.stringify(request));
-      this.send();
+      request.data.data.status = 2;
+      this.requests.push(request.data);
+      this.wssTransfer.send(JSON.stringify(request));
+    }, time);
+  }
+
+  private send() {
+    const self = this;
+    this.wssTransfer.onopen = function() {
+      self.sendToken();
+    };
+    setInterval(() => {
+      this.sendToken();
     }, this.getRndInteger(10, 25) * 1000);
   }
 
+  private sendToken() {
+    const request = this.requestList[this.getRndInteger(0, this.requestList.length)];
+    request.status = 1;
+    this.wssTransfer.send(JSON.stringify(request));
+  }
+
   private create() {
-    setTimeout(() => {
-      const request = {id: this.requestList.length, status: 0, token: this.token, time: 0};
-      this.token++;
-      request.status = 0;
-      this.requestList.push(request);
-      this.ws.send(JSON.stringify(request));
-      this.create();
+    const self = this;
+    this.wssConnect.onopen = function() {
+      self.createToken();
+    };
+    setInterval(() => {
+      this.createToken();
     }, 40000);
+  }
+
+  private createToken() {
+    const request = {token: this.requestList.length.toString(), status: 0};
+    this.requestList.push(request);
+    this.wssConnect.send(request.token);
   }
 
   private getRndInteger(min, max) {
@@ -81,11 +102,11 @@ export class AppComponent implements OnInit {
       case 0:
         return 'Aguardando';
       case 1:
-        return 'Concluido';
-      case 2:
-        return 'Erro';
-      default:
         return 'Pendente';
+      case 2:
+        return 'Sucesso';
+      default:
+        return 'Erro';
     }
   }
 }

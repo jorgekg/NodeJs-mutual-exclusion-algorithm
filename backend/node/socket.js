@@ -2,53 +2,65 @@ const WebSocketServer = require('ws').Server;
 
 const stack = [];
 
-const wss = new WebSocketServer({port: 4206});
+const wssConnection = new WebSocketServer({ port: 4206 });
+const wssTransfer = new WebSocketServer({ port: 4207 });
 LOOK = false;
 COORDENADOR = null;
 
-wss.on('connection', function(ws) {
-  setInterval(function () {
-    if (!LOOK) {
-      LOOK = true;
-      send(ws);
-    }
-  }, 500);
-  dead(ws);
+const index = 1;
+
+wssConnection.on('connection', function (ws) {
   ws.on('message', function incoming(data) {
-    stack.push(data);
+    if (data) {
+      this.index++;
+      const req = {
+        token: data,
+        id: data
+      };
+      console.log(`Criando nova requisição ${JSON.stringify(req)}`);
+      ws.send(JSON.stringify(req));
+    }
   });
 });
 
-function send(ws) {
-  if (stack.length > 0) {
-    const requestString = stack.shift();
-    if (requestString) {
-      const time = getRndInteger(5, 15) * 1000;
-      setInterval(() => {
-        if (requestString) {
-          const request = JSON.parse(requestString);
-          if (!COORDENADOR) {
-            COORDENADOR = request.id;
-            ws.send(JSON.stringify({coordenador: COORDENADOR}));
-          }
-          request.status = 1;
-          request.time = time;
-          ws.send(JSON.stringify(request));
-          LOOK = false;
-        }
-      }, time);
+wssTransfer.on('connection', function (ws) {
+  ws.on('message', function incoming(data) {
+    if (data) {
+      console.log(`nova transferencia: ${data}`);
+      const request = JSON.parse(data);
+      if (request.coordenador) {
+        LOOK = false;
+        ws.send(JSON.stringify(request.data));
+      } else {
+        stack.push(request);
+      }
     }
-  }
-}
+  });
+  sendCoordinator(ws);
+});
 
-function dead(ws) {
+function sendCoordinator(ws) {
   setInterval(() => {
-    COORDENADOR = null;
-    ws.send('dead');
-  }, 60000);  
+    console.log(stack.length + '-' + this.LOOK);
+    if (!this.LOOK) {
+      this.LOOK = true;
+      try {
+        if (stack.length > 0) {
+          const data = stack.shift();
+          console.log(`processando a request: ${data}`);
+          ws.send(JSON.stringify({ coordenador: true, data: { data } }));
+        } else {
+          this.LOOK = false;
+        }
+      } catch (err) {
+        console.log('Coordenador morreu');
+      }
+    }
+  }, 500);
 }
 
 
-function getRndInteger(min, max) {
-  return Math.floor(Math.random() * (max - min) ) + min;
-}
+setInterval(() => {
+  this.COORDENADOR = null;
+  this.stack = [];
+}, 60000);

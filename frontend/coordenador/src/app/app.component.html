@@ -1,0 +1,13 @@
+<h1>Coordenador: request {{coordinator?.id}}</h1>
+<table class="table">
+  <thead>
+    <th>ID</th>
+    <th>Tempo</th>
+  </thead>
+  <tbody>
+    <tr *ngFor="let req of requests">
+      <td>{{req?.id}}</td>
+      <td>{{req?.time}} segundos</td>
+    </tr>
+  </tbody>
+</table>

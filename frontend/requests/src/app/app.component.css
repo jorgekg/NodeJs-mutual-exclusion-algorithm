@@ -1,11 +1,11 @@
-.status0, .status3 {
+.status0, .status1 {
   color: orange
 }
 
-.status1 {
+.status2 {
   color: green;
 }
 
-.status2 {
+.status3 {
   color: red
 }
