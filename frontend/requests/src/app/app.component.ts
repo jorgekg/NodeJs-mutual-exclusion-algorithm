@@ -16,9 +16,8 @@ export class AppComponent implements OnInit {
   private wssTransfer = new WebSocket('ws://localhost:4207/teste');
 
   ngOnInit() {
-    const self = this;
     this.wssConnect.onmessage = (data: any) => {
-      if (data) {
+      if (data && data.data !== 'dead') {
         const request = JSON.parse(data.data);
         if (!request.coordenador) {
           this.requestList.forEach(req => {
@@ -30,20 +29,26 @@ export class AppComponent implements OnInit {
         if (this.requestList.length === 1) {
           this.send();
         }
+      } else {
+        this.requestList.forEach((req) => {
+          if (req.status === 0 || req.status === 1) {
+            req.status = 3;
+          }
+        });
       }
     };
-    this.wssTransfer.onmessage = function(data: any) {
+    this.wssTransfer.onmessage = (data: any) => {
       if (data) {
         const request = JSON.parse(data.data);
         if (!request.coordenador) {
-          self.requestList.forEach(req => {
+          this.requestList.forEach(req => {
             if (req.id === request.data.id) {
               req.status = request.data.status;
             }
           });
         } else {
-          self.coordinator = request.coordinator;
-          self.blockRequest(request);
+          this.coordinator = request.coordinator;
+          this.blockRequest(request);
         }
       }
     };
@@ -71,9 +76,17 @@ export class AppComponent implements OnInit {
   }
 
   private sendToken() {
-    const request = this.requestList[this.getRndInteger(0, this.requestList.length)];
-    request.status = 1;
-    this.wssTransfer.send(JSON.stringify(request));
+    const sendsQty = this.getRndInteger(0, this.requestList.length);
+    const sends = [];
+    for (let i = 0; i <= sendsQty; i++) {
+      const requestId = this.getRndInteger(0, this.requestList.length);
+      if (sends.length === 0 || !sends.filter((sd) => sd !== requestId)) {
+        sends.push(requestId);
+        const request = this.requestList[requestId];
+        request.status = 1;
+        this.wssTransfer.send(JSON.stringify(request));
+      }
+    }
   }
 
   private create() {
@@ -100,9 +113,9 @@ export class AppComponent implements OnInit {
   public getStatus(status) {
     switch (status) {
       case 0:
-        return 'Aguardando';
+        return 'Criado';
       case 1:
-        return 'Pendente';
+        return 'Enviando...';
       case 2:
         return 'Sucesso';
       default:

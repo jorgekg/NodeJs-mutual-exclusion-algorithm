@@ -21,6 +21,7 @@ wssConnection.on('connection', function (ws) {
       ws.send(JSON.stringify(req));
     }
   });
+  close(ws);
 });
 
 wssTransfer.on('connection', function (ws) {
@@ -41,7 +42,6 @@ wssTransfer.on('connection', function (ws) {
 
 function sendCoordinator(ws) {
   setInterval(() => {
-    console.log(stack.length + '-' + this.LOOK);
     if (!this.LOOK) {
       this.LOOK = true;
       try {
@@ -59,8 +59,11 @@ function sendCoordinator(ws) {
   }, 500);
 }
 
-
-setInterval(() => {
-  this.COORDENADOR = null;
-  this.stack = [];
-}, 60000);
+function close(ws) {
+  setInterval(() => {
+    console.log('Coordenador morreu!!!!');
+    this.COORDENADOR = null;
+    this.stack = [];
+    ws.send('dead');
+  }, 60000);
+}
